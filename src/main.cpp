@@ -3,8 +3,17 @@ extern "C" {
   #include <espnow.h>
 }
 
+// Піни для керування мотором через драйвер L298N
+#define MOTOR_IN1  D1
+#define MOTOR_IN2  D2
+
 // MAC-адреса ESP8266 (має співпадати з тією, що у передавача)
 uint8_t myMac[] = {0x94, 0xb9, 0x7e, 0x15, 0x57, 0x0b};
+
+// Пороги для визначення напрямку руху (мають співпадати з передавачем)
+const int HIGH_THR = 3000;
+const int LOW_THR  = 1000;
+
 
 // Структура для передачі даних. Має бути ідентичною на приймачі і передавачі.
 typedef struct struct_message {
@@ -29,10 +38,33 @@ void onDataRecv(uint8_t *mac, uint8_t *data, uint8_t len) {
   Serial.print(receivedData.y);
   Serial.print(" Кнопка=");
   Serial.println(receivedData.button);
+
+  // Логіка керування мотором
+  if (receivedData.y > HIGH_THR) {
+    // Рух вперед
+    digitalWrite(MOTOR_IN1, HIGH);
+    digitalWrite(MOTOR_IN2, LOW);
+    Serial.println("Вперед");
+  } else if (receivedData.y < LOW_THR) {
+    // Рух назад
+    digitalWrite(MOTOR_IN1, LOW);
+    digitalWrite(MOTOR_IN2, HIGH);
+    Serial.println("Назад");
+  } else {
+    // Зупинка мотора
+    digitalWrite(MOTOR_IN1, LOW);
+    digitalWrite(MOTOR_IN2, LOW);
+    Serial.println("Стоп");
+  }
 }
+
 
 void setup() {
   Serial.begin(115200);
+
+  // Налаштування пінів мотора як виходи
+  pinMode(MOTOR_IN1, OUTPUT);
+  pinMode(MOTOR_IN2, OUTPUT);
   
   // Налаштування режиму WiFi (Station)
   WiFi.mode(WIFI_STA);
